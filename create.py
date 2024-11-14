@@ -23,21 +23,26 @@ map1.fill_color_cell(2, 7, "blue", "🔵", True, False)
 map1.fill_color_cell(4, 10, "red", "🔴", True, False)
 
 
-map2 = algorithem.BFS(map1)
+map2 = algorithem.DFS(map1)
 
-for item in map2:
+for item in map2.get("path"):
     item.print_map()
     print("@" * 100)
 
+print(f"the path length is : {map2.get("path_len")}")
+print(f"the visited state number is : {map2.get("visited_len")}")
 
 print("#" * 300)
 
 
-map3 = algorithem.DFS(map1)
+map3 = algorithem.BFS(map1)
 
-for item in map3:
+for item in map3.get("path"):
     item.print_map()
     print("@" * 100)
+
+print(f"the path length is : {map3.get("path_len")}")
+print(f"the visited state number is : {map3.get("visited_len")}")
 
 
 # map1.print_map()

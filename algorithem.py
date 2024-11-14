@@ -17,7 +17,11 @@ def BFS(start_state):
                 path = np.append(path, current.parent)
                 current = current.parent
             path = np.flip(path)
-            return path
+            return {
+                "path": path,
+                "path_len": len(path),
+                "visited_len": len(visited_array),
+            }
         else:
             visited = False
             for item in visited_array:
@@ -47,7 +51,12 @@ def DFS(start_state):
                 path = np.append(path, current.parent)
                 current = current.parent
             path = np.flip(path)
-            return path
+
+            return {
+                "path": path,
+                "path_len": len(path),
+                "visited_len": len(visited_array),
+            }
         else:
             visited = False
             for item in visited_array:
