@@ -1,5 +1,5 @@
 from state import state
-
+import algorithem
 
 map1 = state(11)
 map1.fill_const_col(1, 6, 0, "black", "⬛️")
@@ -21,15 +21,49 @@ map1.fill_color_cell(6, 2, "blue", "🟦", False, False)
 map1.fill_color_cell(1, 2, "red", "🟥", False, False)
 map1.fill_color_cell(2, 7, "blue", "🔵", True, False)
 map1.fill_color_cell(4, 10, "red", "🔴", True, False)
-map1.print_map()
-print("#" * 100)
 
 
-next = state.next_state(map1)
-for item in next:
+map2 = algorithem.BFS(map1)
+
+for item in map2:
     item.print_map()
-    print("#" * 100)
+    print("@" * 100)
+
+
+print("#" * 300)
+
+
+map3 = algorithem.DFS(map1)
+
+for item in map3:
+    item.print_map()
+    print("@" * 100)
+
+
+# map1.print_map()
+# print("#" * 100)
+
+
+# next = state.next_state(map1)
+# for item in next:
+#     item.print_map()
+#     print("#" * 100)
 
 
 # state.play_game(map1)
 # solution (u,l,d,r,u,r,d,r,d,r,u,l)
+
+
+# map2 = state(9)
+# map2.fill_color_cell(0, 0, "red", "🟥", False, False)
+# # map2.fill_color_cell(1, 0, "red", "🟥", False, False)
+# map2.fill_color_cell(4, 0, "red", "🔴", True, False)
+# # map2.fill_color_cell(5, 0, "blue", "🔵", True, False)
+# # map2.fill_color_cell(6, 0, "blue", "🔵", True, False)
+# map2.print_map()
+# print("#" * 100)
+
+
+# print("#" * 100)
+# map4 = state.right_move(map3)
+# map4.print_map()
