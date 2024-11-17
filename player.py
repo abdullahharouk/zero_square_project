@@ -1,4 +1,4 @@
-def play_game(cls, root_state):
+def play_game(root_state):
 
     root_state.print_map()
 
@@ -12,17 +12,17 @@ def play_game(cls, root_state):
         direction = input(" Enter the destination : ")
 
         if direction == "R" or direction == "r":
-            next_state = cls.right_move(root_state)
-            cls.play_game(next_state)
+            next_state = root_state.right_move(root_state)
+            play_game(next_state)
         elif direction == "L" or direction == "l":
-            next_state = cls.left_move(root_state)
-            cls.play_game(next_state)
+            next_state = root_state.left_move(root_state)
+            play_game(next_state)
         elif direction == "U" or direction == "u":
-            next_state = cls.up_move(root_state)
-            cls.play_game(next_state)
+            next_state = root_state.up_move(root_state)
+            play_game(next_state)
         elif direction == "D" or direction == "d":
-            next_state = cls.down_move(root_state)
-            cls.play_game(next_state)
+            next_state = root_state.down_move(root_state)
+            play_game(next_state)
         else:
             print("inncorect input")
-            cls.play_game(root_state)
+            play_game(root_state)

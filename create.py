@@ -1,5 +1,6 @@
 from state import state
 import algorithem
+import player
 
 map1 = state(11)
 map1.fill_const_col(1, 6, 0, "black", "⬛️")
@@ -23,26 +24,26 @@ map1.fill_color_cell(2, 7, "blue", "🔵", True, False)
 map1.fill_color_cell(4, 10, "red", "🔴", True, False)
 
 
-map2 = algorithem.DFS(map1)
+# map2 = algorithem.DFS(map1)
 
-for item in map2.get("path"):
-    item.print_map()
-    print("@" * 100)
+# for item in map2.get("path"):
+#     item.print_map()
+#     print("@" * 100)
 
-print(f"the path length is : {map2.get("path_len")}")
-print(f"the visited state number is : {map2.get("visited_len")}")
+# print(f"the path length is : {map2.get("path_len")}")
+# print(f"the visited state number is : {map2.get("visited_len")}")
 
-print("#" * 300)
+# print("#" * 300)
 
 
-map3 = algorithem.BFS(map1)
+# map3 = algorithem.BFS(map1)
 
-for item in map3.get("path"):
-    item.print_map()
-    print("@" * 100)
+# for item in map3.get("path"):
+#     item.print_map()
+#     print("@" * 100)
 
-print(f"the path length is : {map3.get("path_len")}")
-print(f"the visited state number is : {map3.get("visited_len")}")
+# print(f"the path length is : {map3.get("path_len")}")
+# print(f"the visited state number is : {map3.get("visited_len")}")
 
 
 # map1.print_map()
@@ -55,7 +56,7 @@ print(f"the visited state number is : {map3.get("visited_len")}")
 #     print("#" * 100)
 
 
-# state.play_game(map1)
+# player.play_game(map1)
 # solution (u,l,d,r,u,r,d,r,d,r,u,l)
 
 
