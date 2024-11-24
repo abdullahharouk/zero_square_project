@@ -18,6 +18,8 @@ class state:
                 self.my_array[row][col] = const_square(
                     row, col, "white", "⬜️"
                 ).square_info
+    def __lt__(self, other):
+        return self.edge < other.edge            
 
     def fill_const_col(self, row1, row2, col, color, shape):
         if row1 < row2:
