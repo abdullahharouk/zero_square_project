@@ -1,7 +1,11 @@
 from state import state
 import algorithem
 import player
-
+import numpy as np
+from state import state
+import queue
+my_lifo_queue = queue.LifoQueue()
+visited_array = np.array([])
 map1 = state(11)
 map1.fill_const_col(1, 6, 0, "black", "⬛️")
 map1.fill_const_col(6, 6, 1, "black", "⬛️")
@@ -36,7 +40,7 @@ map1.fill_color_cell(4, 10, "red", "🔴", True, False)
 # print("#" * 300)
 
 
-map3 = algorithem.DFS_R(map1)
+map3 = algorithem.DFS_R(my_lifo_queue,visited_array,map1)
 
 for item in map3.get("path"):
     item.print_map()
