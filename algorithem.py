@@ -82,13 +82,12 @@ def DFS(start_state):
     }
 
 
-
 my_lifo_queue = queue.LifoQueue()
 visited_array = np.array([])
 
 
 def DFS_R(start_state):
-    
+
     my_lifo_queue.put(start_state)
 
     current = start_state
