@@ -7,6 +7,7 @@ from colorsquare import color_square
 class state:
     def __init__(self, size_array):
         self.parent = None
+        self.edge=0
 
         self.size = size_array
         self.my_array = np.full((size_array, size_array), fill_value="", dtype=object)
