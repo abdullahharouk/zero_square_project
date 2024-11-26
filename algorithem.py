@@ -126,17 +126,16 @@ def DFS_R(start_state, visited_array=None, my_lifo_queue=None):
 
 
 def UCS(start_state):
-  
+
     priority_queue = queue.PriorityQueue()
-    
+
     priority_queue.put((start_state.edge, start_state))
     visited_array = np.array([])
 
     while not priority_queue.empty():
-      
+
         current_cost, current = priority_queue.get()
 
-       
         if current.is_finite():
             path = np.array([current])
             while current.parent is not None:
@@ -149,26 +148,33 @@ def UCS(start_state):
                 "visited_len": len(visited_array),
             }
 
-        
         visited = False
         for item in visited_array:
-            if state.equals(item, current) and item.edge==current.edge:
+            if state.equals(item, current) and item.edge == current.edge:
                 visited = True
                 break
 
         if not visited:
-           
-            visited_array = np.append(visited_array, current)
-          
-            next_states = state.next_state(current)
 
-            for item in next_states:
-             
-                item.parent = current
-              
-                item.edge = current_cost + 1  
-              
-                priority_queue.put((item.edge, item))
+            visited_array = np.append(visited_array, current)
+
+            next_states = state.next_state(current)
+            if current.parent == None:
+                for item in next_states:
+
+                    item.parent = current
+
+                    item.edge = current_cost + 1
+
+                    priority_queue.put((item.edge, item))
+            else:
+                for item in next_states:
+                    if state.equals(item, current.parent) == False:
+                        item.parent = current
+
+                        item.edge = current_cost + 1
+
+                        priority_queue.put((item.edge, item))
 
     return {
         "path": [],

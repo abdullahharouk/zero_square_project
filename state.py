@@ -12,7 +12,7 @@ class state:
         self.size = size_array
         self.my_array = np.full((size_array, size_array), fill_value="", dtype=object)
         self.destination_array = np.array((), dtype=color_square)
-        # self.next_states_array = np.array((), dtype=object)
+        
         for row in range(0, size_array):
             for col in range(0, size_array):
                 self.my_array[row][col] = const_square(
