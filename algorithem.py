@@ -1,6 +1,27 @@
 import numpy as np
 from state import state
 import queue
+import random
+
+
+def heuristic(state):
+    cost = 0
+
+    for i in range(state.size):
+        for j in range(state.size):
+            cell = state.my_array[i][j]
+
+            if "final" in cell and cell["final"] == True:
+                goal_color = cell["color"]
+
+                for x in range(state.size):
+                    for y in range(state.size):
+                        piece = state.my_array[x][y]
+                        if "color" in piece and piece["color"] == goal_color:
+
+                            cost += abs(i - x) + abs(j - y)
+                            break
+    return cost
 
 
 def BFS(start_state):
@@ -104,6 +125,7 @@ def DFS_R(start_state, visited_array=None, my_lifo_queue=None):
                 "path_len": len(path),
                 "visited_len": len(visited_array),
             }
+
         else:
             visited = False
             for item in visited_array:
@@ -181,3 +203,49 @@ def UCS(start_state):
         "path_len": [],
         "visited_len": [],
     }
+
+
+def A_star(start_state):
+    priority_queue = queue.PriorityQueue()
+    start_cost = heuristic(start_state)
+    priority_queue.put((start_cost, 0, start_state))  
+    visited_array = np.array([])
+
+    while not priority_queue.empty():
+        _, current_cost, current = priority_queue.get()
+
+        if current.is_finite():
+            path = np.array([current])
+            while current.parent is not None:
+                path = np.append(path, current.parent)
+                current = current.parent
+            path = np.flip(path)
+            return {
+                "path": path,
+                "path_len": len(path),
+                "visited_len": len(visited_array),
+            }
+
+        visited = False
+        for item in visited_array:
+            if state.equals(item, current):
+                visited = True
+                break
+
+        if not visited:
+            visited_array = np.append(visited_array, current)
+
+            next_states = state.next_state(current)
+            for item in next_states:
+                if current.parent is None or not state.equals(item, current.parent):
+                    item.parent = current
+                    g_cost = current_cost + 1
+                    f_cost = g_cost + heuristic(item)
+                    priority_queue.put((f_cost, g_cost, item))
+
+    return {
+        "path": [],
+        "path_len": [],
+        "visited_len": len(visited_array),
+    }
+
