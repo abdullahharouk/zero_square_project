@@ -29,24 +29,40 @@ map1.print_map()
 
 # player.play_game(map1)
 
-# map2 = algorithem.BFS(map1)
+map2 = algorithem.A_star(map1)
 
-# for item in map2.get("path"):
-#     item.print_map()
-#     print("@" * 100)
+for item in map2.get("path"):
+    item.print_map()
+    print("@" * 100)
 
-# print(f"the path length is : {map2.get("path_len")}")
-# print(f"the visited state number is : {map2.get("visited_len")}")
+print(f"the path length is : {map2.get("path_len")}")
+print(f"the visited state number is : {map2.get("visited_len")}")
 
 
-# map3 = algorithem.DFS(map1)
+map3 = algorithem.simple_hill_climbing(map1)
 
-# for item in map3.get("path"):
-#     item.print_map()
-#     print("@" * 100)
+for item in map3.get("path"):
+    item.print_map()
+    print("@" * 100)
 
-# print(f"the path length is : {map3.get("path_len")}")
-# print(f"the visited state number is : {map3.get("visited_len")}")
+print(f"the path length is : {map3.get("path_len")}")
+
+for item in map3.get("visited_len"):
+    item.print_map()
+    print("@" * 100)
+
+
+map3 = algorithem.steepest_hill_climbing(map1)
+
+for item in map3.get("path"):
+    item.print_map()
+    print("@" * 100)
+
+print(f"the path length is : {map3.get("path_len")}")
+
+for item in map3.get("visited_len"):
+    item.print_map()
+    print("@" * 100)
 
 
 # map4 = algorithem.DFS_R(map1)
@@ -91,14 +107,14 @@ map1.print_map()
 # # map1.fill_color_cell(4, 10, "red", "🔴", True, False)
 
 
-map2 = algorithem.hill_climbing(map1)
+# map2 = algorithem.hill_climbing(map1)
 
-for item in map2.get("path"):
-    item.print_map()
-    print("@" * 100)
+# for item in map2.get("path"):
+#     item.print_map()
+#     print("@" * 100)
 
-print(f"the path length is : {map2.get("path_len")}")
-print(f"the visited state number is : {map2.get("visited_len")}")
+# print(f"the path length is : {map2.get("path_len")}")
+# print(f"the visited state number is : {map2.get("visited_len")}")
 
 
 # map1 = state(11)

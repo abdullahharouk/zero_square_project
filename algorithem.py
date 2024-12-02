@@ -1,7 +1,6 @@
 import numpy as np
 from state import state
 import queue
-import random
 
 
 def heuristic(state):
@@ -208,7 +207,7 @@ def UCS(start_state):
 def A_star(start_state):
     priority_queue = queue.PriorityQueue()
     start_cost = heuristic(start_state)
-    priority_queue.put((start_cost, 0, start_state))  
+    priority_queue.put((start_cost, 0, start_state))
     visited_array = np.array([])
 
     while not priority_queue.empty():
@@ -249,3 +248,81 @@ def A_star(start_state):
         "visited_len": len(visited_array),
     }
 
+
+def simple_hill_climbing(start_state):
+    current = start_state
+    visited_array = np.array([])
+
+    while not current.is_finite():
+        visited_array = np.append(visited_array, current)
+        next_states = state.next_state(current)
+
+        if len(next_states) == 0:
+            break
+
+        best_state = None
+
+        if heuristic(next_states[0]) < heuristic(current):
+            best_state = next_states[0]
+
+        if best_state is None:
+            break
+
+        best_state.parent = current
+        current = best_state
+
+    if current.is_finite():
+        path = np.array([current])
+        while current.parent is not None:
+            path = np.append(path, current.parent)
+            current = current.parent
+        path = np.flip(path)
+        return {
+            "path": path,
+            "path_len": len(path),
+            "visited_len": len(visited_array),
+        }
+
+    return {
+        "path": [],
+        "path_len": 0,
+        "visited_len": visited_array,
+    }
+
+
+def steepest_hill_climbing(start_state):
+    current = start_state
+    visited_array = np.array([])
+
+    while not current.is_finite():
+        visited_array = np.append(visited_array, current)
+        next_states = state.next_state(current)
+
+        if len(next_states) == 0:
+            break
+
+        best_next_state = min(next_states, key=heuristic)
+
+        if heuristic(best_next_state) >= heuristic(current):
+            break
+
+        best_next_state.parent = current
+        current = best_next_state
+
+    if current.is_finite():
+        path = np.array([current])
+        while current.parent is not None:
+            path = np.append(path, current.parent)
+            current = current.parent
+        path = np.flip(path)
+        return {
+            "path": path,
+            "path_len": len(path),
+            "visited_len": len(visited_array),
+        }
+
+    return {
+        "path": [],
+        "path_len": 0,
+        "visited_len": visited_array,
+    }
