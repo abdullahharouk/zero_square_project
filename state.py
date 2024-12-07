@@ -5,21 +5,37 @@ from colorsquare import color_square
 
 
 class state:
-    def __init__(self, size_array):
+    def __init__(self, rows, cols):
         self.parent = None
-        self.edge=0
+        self.edge = 0
+        self.game_over = False
+        self.des = []
+        self.rows = rows
+        self.cols = cols
+        # self.my_array = np.full((self.rows, self.cols), fill_value="", dtype=object)
+        self.my_array = [
+            [const_square(row, col, "white", "⬜️").square_info for col in range(cols)]
+            for row in range(rows)
+        ]
+        # self.destination_array = np.array((), dtype=color_square)
+        self.destination_array = []
 
-        self.size = size_array
-        self.my_array = np.full((size_array, size_array), fill_value="", dtype=object)
-        self.destination_array = np.array((), dtype=color_square)
-        
-        for row in range(0, size_array):
-            for col in range(0, size_array):
-                self.my_array[row][col] = const_square(
-                    row, col, "white", "⬜️"
-                ).square_info
+        # for row in range(0, self.rows):
+        #     for col in range(0, self.cols):
+        #         self.my_array[row][col] = const_square(
+        #             row, col, "white", "⬜️"
+        #         ).square_info
+
     def __lt__(self, other):
-        return self.edge < other.edge            
+        return self.edge < other.edge
+
+    def get_hash(self):
+        return hash(
+            tuple(
+                tuple((square["color"], square["shape"]) for square in row)
+                for row in self.my_array
+            )
+        )
 
     def fill_const_col(self, row1, row2, col, color, shape):
         if row1 < row2:
@@ -113,8 +129,8 @@ class state:
     def right_move(cls, current_state):
 
         new_state = deepcopy(current_state)
-        for row in range(0, new_state.size):
-            for col in range(0, new_state.size):
+        for row in range(0, new_state.rows):
+            for col in range(0, new_state.cols):
                 if (
                     new_state.my_array[row][col]["color"] == "white"
                     or new_state.my_array[row][col]["color"] == "black"
@@ -125,7 +141,7 @@ class state:
                     new_state.right_reverse_square(row, col - 1)
                     continue
                 else:
-                    if col != new_state.size - 1:
+                    if col != new_state.cols - 1:
                         if new_state.right_mobility(row, col) == False:
                             new_state.right_reverse_square(row, col - 1)
                             continue
@@ -135,8 +151,13 @@ class state:
                                 new_state.my_array[row][col]["color"]
                                 == new_state.my_array[row][col + 1]["color"]
                             ):
+                                for x in new_state.des:
+                                    if x[2] == new_state.my_array[row][col]["color"]:
+                                        new_state.des.remove(x)
+                                        break
+                                new_state.edge += 1
 
-                                if new_state.destination_array.size == 0:
+                                if len(new_state.destination_array) == 0:
                                     new_state.my_array[row][col] = const_square(
                                         row, col, "white", "⬜️"
                                     ).square_info
@@ -189,9 +210,10 @@ class state:
                             elif new_state.my_array[row][col + 1]["color"] == "black":
                                 continue
                             elif new_state.my_array[row][col + 1]["color"] == "white":
+                                new_state.edge += 1
                                 new_state.my_array[row][col]["move"] = True
 
-                                if new_state.destination_array.size == 0:
+                                if len(new_state.destination_array) == 0:
                                     new_state.my_array[row][col + 1] = color_square(
                                         row,
                                         col + 1,
@@ -267,9 +289,17 @@ class state:
                             elif new_state.my_array[row][col + 1]["final"] == False:
                                 continue
                             else:
+                                new_state.edge += 1
                                 new_state.my_array[row][col]["move"] = True
-                                if new_state.my_array[row][col + 1]["shape"] != "🔶":
-                                    if new_state.destination_array.size == 0:
+                                if (
+                                    new_state.my_array[row][col + 1]["shape"] != "🔶"
+                                    and new_state.my_array[row][col + 1]["shape"]
+                                    != "🔲"
+                                ) or (
+                                    new_state.my_array[row][col + 1]["shape"] == "🔶"
+                                    and new_state.my_array[row][col + 1]["color"] != "?"
+                                ):
+                                    if len(new_state.destination_array) == 0:
                                         new_state.destination_array = np.append(
                                             new_state.destination_array,
                                             color_square(
@@ -418,9 +448,25 @@ class state:
                                                 row, col, "white", "⬜️"
                                             ).square_info
                                             new_state.right_reverse_square(row, col - 1)
-                                else:
+                                elif new_state.my_array[row][col + 1]["shape"] == "🔶":
+                                    for item in new_state.des:
+                                        if item[3] == "🔶":
+                                            item[2] = new_state.my_array[row][col][
+                                                "color"
+                                            ]
+
+                                        if (
+                                            new_state.my_array[row][col]["color"]
+                                            == item[2]
+                                            and item[3] != "🔶"
+                                        ):
+                                            new_state.game_over = True
+                                            break
+
+                                        continue
                                     new_state.my_array[row][col]["move"] = True
-                                    if new_state.destination_array.size == 0:
+
+                                    if len(new_state.destination_array) == 0:
                                         new_state.destination_array = np.append(
                                             new_state.destination_array,
                                             color_square(
@@ -585,8 +631,51 @@ class state:
                                                 row, col, "white", "⬜️"
                                             ).square_info
                                             new_state.right_reverse_square(row, col - 1)
-        for row in range(0, new_state.size):
-            for col in range(0, new_state.size):
+                                else:
+                                    new_state.game_over = True
+                                    new_state.my_array[row][col]["move"] = True
+                                    if len(new_state.destination_array) == 0:
+                                        new_state.my_array[row][col] = const_square(
+                                            row, col, "white", "⬜️"
+                                        ).square_info
+                                        new_state.right_reverse_square(row, col - 1)
+                                    else:
+                                        exist = False
+                                        for item in new_state.destination_array:
+                                            if (
+                                                item.square_info["row"] == row
+                                                and item.square_info["col"] == col
+                                            ):
+                                                exist = True
+
+                                                new_state.my_array[row][col] = (
+                                                    color_square(
+                                                        item.square_info["row"],
+                                                        item.square_info["col"],
+                                                        item.square_info["color"],
+                                                        item.square_info["shape"],
+                                                        item.square_info["final"],
+                                                        item.square_info["move"],
+                                                    ).square_info
+                                                )
+                                                index = np.where(
+                                                    new_state.destination_array == item
+                                                )
+                                                new_state.destination_array = np.delete(
+                                                    new_state.destination_array, index
+                                                )
+                                                new_state.right_reverse_square(
+                                                    row, col - 1
+                                                )
+
+                                                break
+                                        if exist == False:
+                                            new_state.my_array[row][col] = const_square(
+                                                row, col, "white", "⬜️"
+                                            ).square_info
+                                            new_state.right_reverse_square(row, col - 1)
+        for row in range(0, new_state.rows):
+            for col in range(0, new_state.cols):
                 if (
                     new_state.my_array[row][col]["color"] != "white"
                     and new_state.my_array[row][col]["color"] != "black"
@@ -599,8 +688,8 @@ class state:
     def left_move(cls, current_state):
 
         new_state = deepcopy(current_state)
-        for row in range(0, new_state.size):
-            for col in range(new_state.size - 1, -1, -1):
+        for row in range(0, new_state.rows):
+            for col in range(new_state.cols - 1, -1, -1):
                 if (
                     new_state.my_array[row][col]["color"] == "white"
                     or new_state.my_array[row][col]["color"] == "black"
@@ -621,8 +710,13 @@ class state:
                                 new_state.my_array[row][col]["color"]
                                 == new_state.my_array[row][col - 1]["color"]
                             ):
+                                for x in new_state.des:
+                                    if x[2] == new_state.my_array[row][col]["color"]:
+                                        new_state.des.remove(x)
+                                        break
+                                new_state.edge += 1
 
-                                if new_state.destination_array.size == 0:
+                                if len(new_state.destination_array) == 0:
                                     new_state.my_array[row][col] = const_square(
                                         row, col, "white", "⬜️"
                                     ).square_info
@@ -675,9 +769,10 @@ class state:
                             elif new_state.my_array[row][col - 1]["color"] == "black":
                                 continue
                             elif new_state.my_array[row][col - 1]["color"] == "white":
+                                new_state.edge += 1
                                 new_state.my_array[row][col]["move"] = True
 
-                                if new_state.destination_array.size == 0:
+                                if len(new_state.destination_array) == 0:
                                     new_state.my_array[row][col - 1] = color_square(
                                         row,
                                         col - 1,
@@ -753,9 +848,17 @@ class state:
                             elif new_state.my_array[row][col - 1]["final"] == False:
                                 continue
                             else:
+                                new_state.edge += 1
                                 new_state.my_array[row][col]["move"] = True
-                                if new_state.my_array[row][col - 1]["shape"] != "🔶":
-                                    if new_state.destination_array.size == 0:
+                                if (
+                                    new_state.my_array[row][col - 1]["shape"] != "🔶"
+                                    and new_state.my_array[row][col - 1]["shape"]
+                                    != "🔲"
+                                ) or (
+                                    new_state.my_array[row][col - 1]["shape"] == "🔶"
+                                    and new_state.my_array[row][col - 1]["color"] != "?"
+                                ):
+                                    if len(new_state.destination_array) == 0:
                                         new_state.destination_array = np.append(
                                             new_state.destination_array,
                                             color_square(
@@ -904,9 +1007,24 @@ class state:
                                                 row, col, "white", "⬜️"
                                             ).square_info
                                             new_state.left_reverse_square(row, col + 1)
-                                else:
+                                elif new_state.my_array[row][col - 1]["shape"] == "🔶":
+                                    for item in new_state.des:
+                                        if item[3] == "🔶":
+                                            item[2] = new_state.my_array[row][col][
+                                                "color"
+                                            ]
+                                        if (
+                                            new_state.my_array[row][col]["color"]
+                                            == item[2]
+                                            and item[3] != "🔶"
+                                        ):
+                                            new_state.game_over = True
+                                            break
+
+                                        continue
+
                                     new_state.my_array[row][col]["move"] = True
-                                    if new_state.destination_array.size == 0:
+                                    if len(new_state.destination_array) == 0:
                                         new_state.destination_array = np.append(
                                             new_state.destination_array,
                                             color_square(
@@ -1071,8 +1189,52 @@ class state:
                                                 row, col, "white", "⬜️"
                                             ).square_info
                                             new_state.left_reverse_square(row, col + 1)
-        for row in range(0, new_state.size):
-            for col in range(0, new_state.size):
+                                else:
+                                    new_state.game_over = True
+                                    new_state.my_array[row][col]["move"] = True
+                                    if len(new_state.destination_array) == 0:
+                                        new_state.my_array[row][col] = const_square(
+                                            row, col, "white", "⬜️"
+                                        ).square_info
+                                        new_state.left_reverse_square(row, col + 1)
+                                    else:
+                                        exist = False
+                                        for item in new_state.destination_array:
+                                            if (
+                                                item.square_info["row"] == row
+                                                and item.square_info["col"] == col
+                                            ):
+                                                exist = True
+
+                                                new_state.my_array[row][col] = (
+                                                    color_square(
+                                                        item.square_info["row"],
+                                                        item.square_info["col"],
+                                                        item.square_info["color"],
+                                                        item.square_info["shape"],
+                                                        item.square_info["final"],
+                                                        item.square_info["move"],
+                                                    ).square_info
+                                                )
+                                                index = np.where(
+                                                    new_state.destination_array == item
+                                                )
+                                                new_state.destination_array = np.delete(
+                                                    new_state.destination_array, index
+                                                )
+                                                new_state.left_reverse_square(
+                                                    row, col + 1
+                                                )
+
+                                                break
+                                        if exist == False:
+                                            new_state.my_array[row][col] = const_square(
+                                                row, col, "white", "⬜️"
+                                            ).square_info
+                                            new_state.left_reverse_square(row, col + 1)
+
+        for row in range(0, new_state.rows):
+            for col in range(0, new_state.cols):
                 if (
                     new_state.my_array[row][col]["color"] != "white"
                     and new_state.my_array[row][col]["color"] != "black"
@@ -1085,8 +1247,8 @@ class state:
     def up_move(cls, current_state):
 
         new_state = deepcopy(current_state)
-        for row in range(new_state.size - 1, -1, -1):
-            for col in range(0, new_state.size):
+        for row in range(new_state.rows - 1, -1, -1):
+            for col in range(0, new_state.cols):
                 if (
                     new_state.my_array[row][col]["color"] == "white"
                     or new_state.my_array[row][col]["color"] == "black"
@@ -1107,8 +1269,13 @@ class state:
                                 new_state.my_array[row][col]["color"]
                                 == new_state.my_array[row - 1][col]["color"]
                             ):
+                                for x in new_state.des:
+                                    if x[2] == new_state.my_array[row][col]["color"]:
+                                        new_state.des.remove(x)
+                                        break
+                                new_state.edge += 1
 
-                                if new_state.destination_array.size == 0:
+                                if len(new_state.destination_array) == 0:
                                     new_state.my_array[row][col] = const_square(
                                         row, col, "white", "⬜️"
                                     ).square_info
@@ -1162,8 +1329,9 @@ class state:
                                 continue
                             elif new_state.my_array[row - 1][col]["color"] == "white":
                                 new_state.my_array[row][col]["move"] = True
+                                new_state.edge += 1
 
-                                if new_state.destination_array.size == 0:
+                                if len(new_state.destination_array) == 0:
                                     new_state.my_array[row - 1][col] = color_square(
                                         row - 1,
                                         col,
@@ -1239,9 +1407,17 @@ class state:
                             elif new_state.my_array[row - 1][col]["final"] == False:
                                 continue
                             else:
+                                new_state.edge += 1
                                 new_state.my_array[row][col]["move"] = True
-                                if new_state.my_array[row - 1][col]["shape"] != "🔶":
-                                    if new_state.destination_array.size == 0:
+                                if (
+                                    new_state.my_array[row - 1][col]["shape"] != "🔶"
+                                    and new_state.my_array[row - 1][col]["shape"]
+                                    != "🔲"
+                                ) or (
+                                    new_state.my_array[row - 1][col]["shape"] == "🔶"
+                                    and new_state.my_array[row - 1][col]["color"] != "?"
+                                ):
+                                    if len(new_state.destination_array) == 0:
                                         new_state.destination_array = np.append(
                                             new_state.destination_array,
                                             color_square(
@@ -1390,9 +1566,22 @@ class state:
                                                 row, col, "white", "⬜️"
                                             ).square_info
                                             new_state.up_reverse_square(row + 1, col)
-                                else:
+                                elif new_state.my_array[row - 1][col]["shape"] == "🔶":
+                                    for item in new_state.des:
+                                        if item[3] == "🔶":
+                                            item[2] = new_state.my_array[row][col][
+                                                "color"
+                                            ]
+                                        if (
+                                            new_state.my_array[row][col]["color"]
+                                            == item[2]
+                                            and item[3] != "🔶"
+                                        ):
+                                            new_state.game_over = True
+                                            break
+                                        continue
                                     new_state.my_array[row][col]["move"] = True
-                                    if new_state.destination_array.size == 0:
+                                    if len(new_state.destination_array) == 0:
                                         new_state.destination_array = np.append(
                                             new_state.destination_array,
                                             color_square(
@@ -1557,8 +1746,51 @@ class state:
                                                 row, col, "white", "⬜️"
                                             ).square_info
                                             new_state.up_reverse_square(row + 1, col)
-        for row in range(0, new_state.size):
-            for col in range(0, new_state.size):
+                                else:
+                                    new_state.game_over = True
+                                    new_state.my_array[row][col]["move"] = True
+                                    if len(new_state.destination_array) == 0:
+                                        new_state.my_array[row][col] = const_square(
+                                            row, col, "white", "⬜️"
+                                        ).square_info
+                                        new_state.up_reverse_square(row + 1, col)
+                                    else:
+                                        exist = False
+                                        for item in new_state.destination_array:
+                                            if (
+                                                item.square_info["row"] == row
+                                                and item.square_info["col"] == col
+                                            ):
+                                                exist = True
+
+                                                new_state.my_array[row][col] = (
+                                                    color_square(
+                                                        item.square_info["row"],
+                                                        item.square_info["col"],
+                                                        item.square_info["color"],
+                                                        item.square_info["shape"],
+                                                        item.square_info["final"],
+                                                        item.square_info["move"],
+                                                    ).square_info
+                                                )
+                                                index = np.where(
+                                                    new_state.destination_array == item
+                                                )
+                                                new_state.destination_array = np.delete(
+                                                    new_state.destination_array, index
+                                                )
+                                                new_state.up_reverse_square(
+                                                    row + 1, col
+                                                )
+
+                                                break
+                                        if exist == False:
+                                            new_state.my_array[row][col] = const_square(
+                                                row, col, "white", "⬜️"
+                                            ).square_info
+                                            new_state.up_reverse_square(row + 1, col)
+        for row in range(0, new_state.rows):
+            for col in range(0, new_state.cols):
                 if (
                     new_state.my_array[row][col]["color"] != "white"
                     and new_state.my_array[row][col]["color"] != "black"
@@ -1571,8 +1803,8 @@ class state:
     def down_move(cls, current_state):
 
         new_state = deepcopy(current_state)
-        for row in range(0, new_state.size):
-            for col in range(0, new_state.size):
+        for row in range(0, new_state.rows):
+            for col in range(0, new_state.cols):
                 if (
                     new_state.my_array[row][col]["color"] == "white"
                     or new_state.my_array[row][col]["color"] == "black"
@@ -1583,7 +1815,7 @@ class state:
                     new_state.down_reverse_square(row - 1, col)
                     continue
                 else:
-                    if row != new_state.size - 1:
+                    if row != new_state.rows - 1:
                         if new_state.down_mobility(row, col) == False:
                             new_state.down_reverse_square(row - 1, col)
                             continue
@@ -1593,8 +1825,13 @@ class state:
                                 new_state.my_array[row][col]["color"]
                                 == new_state.my_array[row + 1][col]["color"]
                             ):
+                                for x in new_state.des:
+                                    if x[2] == new_state.my_array[row][col]["color"]:
+                                        new_state.des.remove(x)
+                                        break
+                                new_state.edge += 1
 
-                                if new_state.destination_array.size == 0:
+                                if len(new_state.destination_array) == 0:
                                     new_state.my_array[row][col] = const_square(
                                         row, col, "white", "⬜️"
                                     ).square_info
@@ -1647,9 +1884,10 @@ class state:
                             elif new_state.my_array[row + 1][col]["color"] == "black":
                                 continue
                             elif new_state.my_array[row + 1][col]["color"] == "white":
+                                new_state.edge += 1
                                 new_state.my_array[row][col]["move"] = True
 
-                                if new_state.destination_array.size == 0:
+                                if len(new_state.destination_array) == 0:
                                     new_state.my_array[row + 1][col] = color_square(
                                         row + 1,
                                         col,
@@ -1725,9 +1963,17 @@ class state:
                             elif new_state.my_array[row + 1][col]["final"] == False:
                                 continue
                             else:
+                                new_state.edge += 1
                                 new_state.my_array[row][col]["move"] = True
-                                if new_state.my_array[row + 1][col]["shape"] != "🔶":
-                                    if new_state.destination_array.size == 0:
+                                if (
+                                    new_state.my_array[row + 1][col]["shape"] != "🔶"
+                                    and new_state.my_array[row + 1][col]["shape"]
+                                    != "🔲"
+                                ) or (
+                                    new_state.my_array[row + 1][col]["shape"] == "🔶"
+                                    and new_state.my_array[row + 1][col]["color"] != "?"
+                                ):
+                                    if len(new_state.destination_array) == 0:
                                         new_state.destination_array = np.append(
                                             new_state.destination_array,
                                             color_square(
@@ -1876,9 +2122,23 @@ class state:
                                                 row, col, "white", "⬜️"
                                             ).square_info
                                             new_state.down_reverse_square(row - 1, col)
-                                else:
+                                elif new_state.my_array[row + 1][col]["shape"] == "🔶":
+                                    for item in new_state.des:
+                                        if item[3] == "🔶":
+                                            item[2] = new_state.my_array[row][col][
+                                                "color"
+                                            ]
+                                            
+                                        if (
+                                            new_state.my_array[row][col]["color"]
+                                            == item[2]
+                                            and item[3] != "🔶"
+                                        ):
+                                            new_state.game_over = True
+                                            break
+                                        continue
                                     new_state.my_array[row][col]["move"] = True
-                                    if new_state.destination_array.size == 0:
+                                    if len(new_state.destination_array) == 0:
                                         new_state.destination_array = np.append(
                                             new_state.destination_array,
                                             color_square(
@@ -2043,8 +2303,51 @@ class state:
                                                 row, col, "white", "⬜️"
                                             ).square_info
                                             new_state.down_reverse_square(row - 1, col)
-        for row in range(0, new_state.size):
-            for col in range(0, new_state.size):
+                                else:
+                                    new_state.game_over = True
+                                    new_state.my_array[row][col]["move"] = True
+                                    if len(new_state.destination_array) == 0:
+                                        new_state.my_array[row][col] = const_square(
+                                            row, col, "white", "⬜️"
+                                        ).square_info
+                                        new_state.down_reverse_square(row - 1, col)
+                                    else:
+                                        exist = False
+                                        for item in new_state.destination_array:
+                                            if (
+                                                item.square_info["row"] == row
+                                                and item.square_info["col"] == col
+                                            ):
+                                                exist = True
+
+                                                new_state.my_array[row][col] = (
+                                                    color_square(
+                                                        item.square_info["row"],
+                                                        item.square_info["col"],
+                                                        item.square_info["color"],
+                                                        item.square_info["shape"],
+                                                        item.square_info["final"],
+                                                        item.square_info["move"],
+                                                    ).square_info
+                                                )
+                                                index = np.where(
+                                                    new_state.destination_array == item
+                                                )
+                                                new_state.destination_array = np.delete(
+                                                    new_state.destination_array, index
+                                                )
+                                                new_state.down_reverse_square(
+                                                    row - 1, col
+                                                )
+
+                                                break
+                                        if exist == False:
+                                            new_state.my_array[row][col] = const_square(
+                                                row, col, "white", "⬜️"
+                                            ).square_info
+                                            new_state.down_reverse_square(row - 1, col)
+        for row in range(0, new_state.rows):
+            for col in range(0, new_state.cols):
                 if (
                     new_state.my_array[row][col]["color"] != "white"
                     and new_state.my_array[row][col]["color"] != "black"
@@ -2062,24 +2365,31 @@ class state:
         return self.my_array
 
     ################################################################################################################################
-    def is_finite(self):
-        for row in range(0, self.size):
-            for col in range(0, self.size):
-                if (
-                    self.my_array[row][col]["color"] == "white"
-                    or self.my_array[row][col]["color"] == "black"
-                ):
-                    continue
-                else:
-                    return False
+    # def is_finite(self):
+    #     for row in range(0, self.rows):
+    #         for col in range(0, self.cols):
+    #             if (
+    #                 self.my_array[row][col]["color"] == "white"
+    #                 or self.my_array[row][col]["color"] == "black"
+    #                 or self.my_array[row][col]["shape"] == "🔲"
+    #             ):
+    #                 continue
+    #             else:
+    #                 return False
 
-        return True
+    #     return True
+
+    def is_finite(self):
+        if len(self.des) == 0:
+            return True
+        else:
+            return False
 
     @classmethod
     def equals(cls, state, nextstate):
 
-        for row in range(0, state.size):
-            for col in range(0, state.size):
+        for row in range(0, state.rows):
+            for col in range(0, state.cols):
                 if state.my_array[row][col] == nextstate.my_array[row][col]:
                     continue
                 else:
@@ -2089,19 +2399,24 @@ class state:
 
     @classmethod
     def next_state(cls, current_state):
-        next_state = np.array([])
+        next_state = []
+        current_h = current_state.get_hash()
         right = state.right_move(current_state)
-        if state.equals(current_state, right) == False:
-            next_state = np.append(next_state, right)
+        # if state.equals(current_state, right) == False:
+        if current_h != right.get_hash():
+            next_state.append(right)
         left = state.left_move(current_state)
-        if state.equals(current_state, left) == False:
-            next_state = np.append(next_state, left)
+        # if state.equals(current_state, left) == False:
+        if current_h != left.get_hash():
+            next_state.append(left)
         up = state.up_move(current_state)
-        if state.equals(current_state, up) == False:
-            next_state = np.append(next_state, up)
+        # if state.equals(current_state, up) == False:
+        if current_h != up.get_hash():
+            next_state.append(up)
         down = state.down_move(current_state)
-        if state.equals(current_state, down) == False:
-            next_state = np.append(next_state, down)
+        # if state.equals(current_state, down) == False:
+        if current_h != down.get_hash():
+            next_state.append(down)
         return next_state
 
     #########################################################################################################################
@@ -2117,8 +2432,14 @@ class state:
                         self.my_array[i][ind]["color"]
                         == self.my_array[i][ind + 1]["color"]
                     ):
+                        for x in self.des:
+                            if x[2] == self.my_array[i][ind]["color"]:
+                                self.des.remove(x)
+                                break
 
-                        if self.destination_array.size == 0:
+                        self.edge += 1
+
+                        if len(self.destination_array) == 0:
                             self.my_array[i][ind] = const_square(
                                 i, ind, "white", "⬜️"
                             ).square_info
@@ -2164,8 +2485,9 @@ class state:
                     elif self.my_array[i][ind + 1]["color"] == "black":
                         continue
                     elif self.my_array[i][ind + 1]["color"] == "white":
+                        self.edge += 1
 
-                        if self.destination_array.size == 0:
+                        if len(self.destination_array) == 0:
                             self.my_array[i][ind + 1] = color_square(
                                 i,
                                 ind + 1,
@@ -2226,9 +2548,16 @@ class state:
                     elif self.my_array[i][ind + 1]["final"] == False:
                         continue
                     else:
+                        self.edge += 1
 
-                        if self.my_array[i][ind + 1]["shape"] != "🔶":
-                            if self.destination_array.size == 0:
+                        if (
+                            self.my_array[i][ind + 1]["shape"] != "🔶"
+                            and self.my_array[i][ind + 1]["shape"] != "🔲"
+                        ) or (
+                            self.my_array[i][ind + 1]["shape"] == "🔶"
+                            and self.my_array[i][ind + 1]["color"] != "?"
+                        ):
+                            if len(self.destination_array) == 0:
                                 self.destination_array = np.append(
                                     self.destination_array,
                                     color_square(
@@ -2318,9 +2647,19 @@ class state:
                                         i, ind, "white", "⬜️"
                                     ).square_info
 
-                        else:
+                        elif self.my_array[i][ind + 1]["shape"] == "🔶":
+                            for item in self.des:
+                                if item[3] == "🔶":
+                                    item[2] = self.my_array[i][ind]["color"]
+                                if (
+                                    self.my_array[i][ind]["color"] == item[2]
+                                    and item[3] != "🔶"
+                                ):
+                                    self.game_over = True
+                                    break
+                                continue
 
-                            if self.destination_array.size == 0:
+                            if len(self.destination_array) == 0:
                                 self.destination_array = np.append(
                                     self.destination_array,
                                     color_square(
@@ -2417,13 +2756,46 @@ class state:
                                     self.my_array[i][ind] = const_square(
                                         i, ind, "white", "⬜️"
                                     ).square_info
+                        else:
+                            if len(self.destination_array) == 0:
+                                self.my_array[i][ind] = const_square(
+                                    i, ind, "white", "⬜️"
+                                ).square_info
+
+                            else:
+                                exist = False
+                                for item in self.destination_array:
+                                    if (
+                                        item.square_info["row"] == i
+                                        and item.square_info["col"] == ind
+                                    ):
+                                        exist = True
+
+                                        self.my_array[i][ind] = color_square(
+                                            item.square_info["row"],
+                                            item.square_info["col"],
+                                            item.square_info["color"],
+                                            item.square_info["shape"],
+                                            item.square_info["final"],
+                                            item.square_info["move"],
+                                        ).square_info
+                                        index = np.where(self.destination_array == item)
+                                        self.destination_array = np.delete(
+                                            self.destination_array, index
+                                        )
+
+                                        break
+                                if exist == False:
+                                    self.my_array[i][ind] = const_square(
+                                        i, ind, "white", "⬜️"
+                                    ).square_info
 
             else:
                 break
 
     #########################################################################################################################
     def left_reverse_square(self, i, j):
-        for ind in range(j, self.size, +1):
+        for ind in range(j, self.cols, +1):
             if (
                 self.my_array[i][ind]["color"] != "white"
                 and self.my_array[i][ind]["color"] != "black"
@@ -2433,8 +2805,13 @@ class state:
                         self.my_array[i][ind]["color"]
                         == self.my_array[i][ind - 1]["color"]
                     ):
+                        for x in self.des:
+                            if x[2] == self.my_array[i][ind]["color"]:
+                                self.des.remove(x)
+                                break
+                        self.edge += 1
 
-                        if self.destination_array.size == 0:
+                        if len(self.destination_array) == 0:
                             self.my_array[i][ind] = const_square(
                                 i, ind, "white", "⬜️"
                             ).square_info
@@ -2480,8 +2857,9 @@ class state:
                     elif self.my_array[i][ind - 1]["color"] == "black":
                         continue
                     elif self.my_array[i][ind - 1]["color"] == "white":
+                        self.edge += 1
 
-                        if self.destination_array.size == 0:
+                        if len(self.destination_array) == 0:
                             self.my_array[i][ind - 1] = color_square(
                                 i,
                                 ind - 1,
@@ -2542,9 +2920,16 @@ class state:
                     elif self.my_array[i][ind - 1]["final"] == False:
                         continue
                     else:
+                        self.edge += 1
 
-                        if self.my_array[i][ind - 1]["shape"] != "🔶":
-                            if self.destination_array.size == 0:
+                        if (
+                            self.my_array[i][ind - 1]["shape"] != "🔶"
+                            and self.my_array[i][ind - 1]["shape"] != "🔲"
+                        ) or (
+                            self.my_array[i][ind - 1]["shape"] == "🔶"
+                            and self.my_array[i][ind - 1]["color"] != "?"
+                        ):
+                            if len(self.destination_array) == 0:
                                 self.destination_array = np.append(
                                     self.destination_array,
                                     color_square(
@@ -2634,9 +3019,19 @@ class state:
                                         i, ind, "white", "⬜️"
                                     ).square_info
 
-                        else:
+                        elif self.my_array[i][ind - 1]["shape"] == "🔶":
+                            for item in self.des:
+                                if item[3] == "🔶":
+                                    item[2] = self.my_array[i][ind]["color"]
+                                if (
+                                    self.my_array[i][ind]["color"] == item[2]
+                                    and item[3] != "🔶"
+                                ):
+                                    self.game_over = True
+                                    break
+                                continue
 
-                            if self.destination_array.size == 0:
+                            if len(self.destination_array) == 0:
                                 self.destination_array = np.append(
                                     self.destination_array,
                                     color_square(
@@ -2733,13 +3128,46 @@ class state:
                                     self.my_array[i][ind] = const_square(
                                         i, ind, "white", "⬜️"
                                     ).square_info
+                        else:
+                            if len(self.destination_array) == 0:
+                                self.my_array[i][ind] = const_square(
+                                    i, ind, "white", "⬜️"
+                                ).square_info
+
+                            else:
+                                exist = False
+                                for item in self.destination_array:
+                                    if (
+                                        item.square_info["row"] == i
+                                        and item.square_info["col"] == ind
+                                    ):
+                                        exist = True
+
+                                        self.my_array[i][ind] = color_square(
+                                            item.square_info["row"],
+                                            item.square_info["col"],
+                                            item.square_info["color"],
+                                            item.square_info["shape"],
+                                            item.square_info["final"],
+                                            item.square_info["move"],
+                                        ).square_info
+                                        index = np.where(self.destination_array == item)
+                                        self.destination_array = np.delete(
+                                            self.destination_array, index
+                                        )
+
+                                        break
+                                if exist == False:
+                                    self.my_array[i][ind] = const_square(
+                                        i, ind, "white", "⬜️"
+                                    ).square_info
 
             else:
                 break
 
     ####################################################################################################################
     def up_reverse_square(self, i, j):
-        for ind in range(i, self.size, +1):
+        for ind in range(i, self.rows, +1):
             if (
                 self.my_array[ind][j]["color"] != "white"
                 and self.my_array[ind][j]["color"] != "black"
@@ -2749,8 +3177,13 @@ class state:
                         self.my_array[ind][j]["color"]
                         == self.my_array[ind - 1][j]["color"]
                     ):
+                        for x in self.des:
+                            if x[2] == self.my_array[ind][j]["color"]:
+                                self.des.remove(x)
+                                break
+                        self.edge += 1
 
-                        if self.destination_array.size == 0:
+                        if len(self.destination_array) == 0:
                             self.my_array[ind][j] = const_square(
                                 ind, j, "white", "⬜️"
                             ).square_info
@@ -2796,8 +3229,9 @@ class state:
                     elif self.my_array[ind - 1][j]["color"] == "black":
                         continue
                     elif self.my_array[ind - 1][j]["color"] == "white":
+                        self.edge += 1
 
-                        if self.destination_array.size == 0:
+                        if len(self.destination_array) == 0:
                             self.my_array[ind - 1][j] = color_square(
                                 ind - 1,
                                 j,
@@ -2858,9 +3292,16 @@ class state:
                     elif self.my_array[ind - 1][j]["final"] == False:
                         continue
                     else:
+                        self.edge += 1
 
-                        if self.my_array[ind - 1][j]["shape"] != "🔶":
-                            if self.destination_array.size == 0:
+                        if (
+                            self.my_array[ind - 1][j]["shape"] != "🔶"
+                            and self.my_array[ind - 1][j]["shape"] != "🔲"
+                        ) or (
+                            self.my_array[ind - 1][j]["shape"] == "🔶"
+                            and self.my_array[ind - 1][j]["color"] != "?"
+                        ):
+                            if len(self.destination_array) == 0:
                                 self.destination_array = np.append(
                                     self.destination_array,
                                     color_square(
@@ -2950,9 +3391,19 @@ class state:
                                         ind, j, "white", "⬜️"
                                     ).square_info
 
-                        else:
+                        elif self.my_array[ind - 1][j]["shape"] == "🔶":
+                            for item in self.des:
+                                if item[3] == "🔶":
+                                    item[2] = self.my_array[ind][j]["color"]
+                                if (
+                                    self.my_array[ind][j]["color"] == item[2]
+                                    and item[3] != "🔶"
+                                ):
+                                    self.game_over = True
+                                    break
+                                continue
 
-                            if self.destination_array.size == 0:
+                            if len(self.destination_array) == 0:
                                 self.destination_array = np.append(
                                     self.destination_array,
                                     color_square(
@@ -3049,6 +3500,39 @@ class state:
                                     self.my_array[ind][j] = const_square(
                                         ind, j, "white", "⬜️"
                                     ).square_info
+                        else:
+                            if len(self.destination_array) == 0:
+                                self.my_array[ind][j] = const_square(
+                                    ind, j, "white", "⬜️"
+                                ).square_info
+
+                            else:
+                                exist = False
+                                for item in self.destination_array:
+                                    if (
+                                        item.square_info["row"] == ind
+                                        and item.square_info["col"] == j
+                                    ):
+                                        exist = True
+
+                                        self.my_array[ind][j] = color_square(
+                                            item.square_info["row"],
+                                            item.square_info["col"],
+                                            item.square_info["color"],
+                                            item.square_info["shape"],
+                                            item.square_info["final"],
+                                            item.square_info["move"],
+                                        ).square_info
+                                        index = np.where(self.destination_array == item)
+                                        self.destination_array = np.delete(
+                                            self.destination_array, index
+                                        )
+
+                                        break
+                                if exist == False:
+                                    self.my_array[ind][j] = const_square(
+                                        ind, j, "white", "⬜️"
+                                    ).square_info
 
             else:
                 break
@@ -3065,8 +3549,13 @@ class state:
                         self.my_array[ind][j]["color"]
                         == self.my_array[ind + 1][j]["color"]
                     ):
+                        for x in self.des:
+                            if x[2] == self.my_array[ind][j]["color"]:
+                                self.des.remove(x)
+                                break
+                        self.edge += 1
 
-                        if self.destination_array.size == 0:
+                        if len(self.destination_array) == 0:
                             self.my_array[ind][j] = const_square(
                                 ind, j, "white", "⬜️"
                             ).square_info
@@ -3111,9 +3600,11 @@ class state:
 
                     elif self.my_array[ind + 1][j]["color"] == "black":
                         continue
-                    elif self.my_array[ind + 1][j]["color"] == "white":
 
-                        if self.destination_array.size == 0:
+                    elif self.my_array[ind + 1][j]["color"] == "white":
+                        self.edge += 1
+
+                        if len(self.destination_array) == 0:
                             self.my_array[ind + 1][j] = color_square(
                                 ind + 1,
                                 j,
@@ -3174,9 +3665,16 @@ class state:
                     elif self.my_array[ind + 1][j]["final"] == False:
                         continue
                     else:
+                        self.edge += 1
 
-                        if self.my_array[ind + 1][j]["shape"] != "🔶":
-                            if self.destination_array.size == 0:
+                        if (
+                            self.my_array[ind + 1][j]["shape"] != "🔶"
+                            and self.my_array[ind + 1][j]["shape"] != "🔲"
+                        ) or (
+                            self.my_array[ind + 1][j]["shape"] == "🔶"
+                            and self.my_array[ind + 1][j]["color"] != "?"
+                        ):
+                            if len(self.destination_array) == 0:
                                 self.destination_array = np.append(
                                     self.destination_array,
                                     color_square(
@@ -3266,9 +3764,19 @@ class state:
                                         ind, j, "white", "⬜️"
                                     ).square_info
 
-                        else:
+                        elif self.my_array[ind + 1][j]["shape"] == "🔶":
+                            for item in self.des:
+                                if item[3] == "🔶":
+                                    item[2] = self.my_array[ind][j]["color"]
+                                if (
+                                    self.my_array[ind][j]["color"] == item[2]
+                                    and item[3] != "🔶"
+                                ):
+                                    self.game_over = True
+                                    break
+                                continue
 
-                            if self.destination_array.size == 0:
+                            if len(self.destination_array) == 0:
                                 self.destination_array = np.append(
                                     self.destination_array,
                                     color_square(
@@ -3365,6 +3873,38 @@ class state:
                                     self.my_array[ind][j] = const_square(
                                         ind, j, "white", "⬜️"
                                     ).square_info
+                        else:
+                            if len(self.destination_array) == 0:
+                                self.my_array[ind][j] = const_square(
+                                    ind, j, "white", "⬜️"
+                                ).square_info
 
+                            else:
+                                exist = False
+                                for item in self.destination_array:
+                                    if (
+                                        item.square_info["row"] == ind
+                                        and item.square_info["col"] == j
+                                    ):
+                                        exist = True
+
+                                        self.my_array[ind][j] = color_square(
+                                            item.square_info["row"],
+                                            item.square_info["col"],
+                                            item.square_info["color"],
+                                            item.square_info["shape"],
+                                            item.square_info["final"],
+                                            item.square_info["move"],
+                                        ).square_info
+                                        index = np.where(self.destination_array == item)
+                                        self.destination_array = np.delete(
+                                            self.destination_array, index
+                                        )
+
+                                        break
+                                if exist == False:
+                                    self.my_array[ind][j] = const_square(
+                                        ind, j, "white", "⬜️"
+                                    ).square_info
             else:
                 break

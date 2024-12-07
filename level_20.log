@@ -1,0 +1,61 @@
+--------------------BFS--------------------
+Path length: 14
+Visited state number: 3025
+Cost: 44
+Execution Time: 16.2901 seconds
+--------------------BFS FINISHED--------------------
+
+
+
+--------------------DFS--------------------
+Path length: 25
+Visited state number: 28
+Cost: 66
+Execution Time: 0.1680 seconds
+--------------------DFS FINISHED--------------------
+
+
+
+--------------------DFS_R--------------------
+Path length: 25
+Visited state number: 28
+Cost: 66
+Execution Time: 0.1906 seconds
+--------------------DFS_R FINISHED--------------------
+
+
+
+--------------------UCS--------------------
+Path length: 16
+Visited state number: 1803
+Cost: 36
+Execution Time: 9.4153 seconds
+--------------------UCS FINISHED--------------------
+
+
+
+--------------------A_STAR--------------------
+Path length: 16
+Visited state number: 394
+Cost: 36
+Execution Time: 1.5328 seconds
+--------------------A_STAR FINISHED--------------------
+
+
+
+--------------------SIMPLE_HILL_CLIMBING--------------------
+Path length: 0
+Visited state number: 1
+Cost: None
+Execution Time: 0.0010 seconds
+--------------------SIMPLE_HILL_CLIMBING FINISHED--------------------
+
+
+
+--------------------STEEPEST_HILL_CLIMBING--------------------
+Path length: 0
+Visited state number: 3
+Cost: None
+Execution Time: 0.0020 seconds
+--------------------STEEPEST_HILL_CLIMBING FINISHED--------------------
+

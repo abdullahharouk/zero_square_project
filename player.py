@@ -1,7 +1,7 @@
 def play_game(root_state):
 
     root_state.print_map()
-
+    print(root_state.game_over)
     if root_state.is_finite():
         print("win")
     else:

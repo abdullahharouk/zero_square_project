@@ -1,260 +1,333 @@
-import numpy as np
 from state import state
-import queue
+
+from collections import deque
+from heapq import heappush, heappop
+import sys
+
+sys.setrecursionlimit(2000000)
 
 
 def heuristic(state):
     cost = 0
 
-    for i in range(state.size):
-        for j in range(state.size):
-            cell = state.my_array[i][j]
+    for cell in state.des:
+        if cell[3] == "🔶":
+            for x in range(state.rows):
+                for y in range(state.cols):
+                    if (
+                        state.my_array[x][y]["color"] != "white"
+                        and state.my_array[x][y]["color"] != "black"
+                    ):
+                        if state.my_array[x][y]["final"] == False:
+                            check = False
+                            for cell1 in state.des:
+                                if (
+                                    state.my_array[x][y]["color"] == cell1[2]
+                                    and cell1[3] != "🔶"
+                                ):
+                                    check = True
+                                    break
+                            if not check:
+                                cost += abs(cell[0] - x) + abs(cell[1] - y)
 
-            if "final" in cell and cell["final"] == True:
-                goal_color = cell["color"]
+        else:
+            goal_color = cell[2]
 
-                for x in range(state.size):
-                    for y in range(state.size):
-                        piece = state.my_array[x][y]
-                        if "color" in piece and piece["color"] == goal_color:
+            for x in range(state.rows):
+                for y in range(state.cols):
+                    piece = state.my_array[x][y]
+                    if "color" in piece and piece["color"] == goal_color:
 
-                            cost += abs(i - x) + abs(j - y)
-                            break
+                        cost += abs(cell[0] - x) + abs(cell[1] - y)
+                        break
     return cost
 
 
 def BFS(start_state):
-    my_queue = queue.Queue()
-    my_queue.put(start_state)
-    visited_array = np.array([])
+    my_queue = deque([start_state])
+    visited_set = set()
 
-    while my_queue.empty() == False:
+    while my_queue:
+        print(len(visited_set))
+        current = my_queue.popleft()
 
-        current = my_queue.get()
-        if current.is_finite() == True:
-            path = np.array([current])
-            while current.parent != None:
-                path = np.append(path, current.parent)
+        if current.is_finite():
+            cost = current.edge
+            path = [current]
+            while current.parent:
+                path.append(current.parent)
                 current = current.parent
-            path = np.flip(path)
+            path.reverse()
             return {
                 "path": path,
                 "path_len": len(path),
-                "visited_len": len(visited_array),
+                "visited_len": len(visited_set),
+                "cost": cost,
             }
-        else:
-            visited = False
-            for item in visited_array:
-                if state.equals(item, current) == True:
-                    visited = True
-                    break
-                continue
-            if visited == False:
-                visited_array = np.append(visited_array, current)
-                next_states = state.next_state(current)
-                for item1 in next_states:
-                    item1.parent = current
-                    my_queue.put(item1)
+
+        current_h = current.get_hash()
+        if current_h not in visited_set:
+            visited_set.add(current_h)
+            for item in state.next_state(current):
+                if (
+                    current.parent is None
+                    or item.get_hash() != current.parent.get_hash()
+                ) and not item.game_over:
+                    item.parent = current
+                    my_queue.append(item)
+
     return {
         "path": [],
-        "path_len": [],
-        "visited_len": [],
+        "path_len": 0,
+        "visited_len": len(visited_set),
     }
 
 
-def DFS(start_state):
-    my_lifo_queue = queue.LifoQueue()
-    my_lifo_queue.put(start_state)
-    visited_array = np.array([])
+def DFS(start_state, max_depth=27):
+    my_stack = deque([(start_state, 0)])
+    visited_set = set()
 
-    while my_lifo_queue.empty() == False:
+    while my_stack:
+        print(len(visited_set))
+        current, depth = my_stack.pop()
+        if depth > max_depth:
+            continue
 
-        current = my_lifo_queue.get()
-        if current.is_finite() == True:
-            path = np.array([current])
-            while current.parent != None:
-                path = np.append(path, current.parent)
+        if current.is_finite():
+            path = [current]
+            cost = current.edge
+            while current.parent:
+                path.append(current.parent)
                 current = current.parent
-            path = np.flip(path)
-
+            path.reverse()
             return {
                 "path": path,
                 "path_len": len(path),
-                "visited_len": len(visited_array),
+                "visited_len": len(visited_set),
+                "cost": cost,
             }
-        else:
-            visited = False
-            for item in visited_array:
-                if state.equals(item, current) == True:
-                    visited = True
-                    break
-                continue
-            if visited == False:
-                visited_array = np.append(visited_array, current)
-                next_states = state.next_state(current)
-                for item1 in next_states:
-                    item1.parent = current
-                    my_lifo_queue.put(item1)
+
+        current_h = current.get_hash()
+        if current_h not in visited_set:
+            visited_set.add(current_h)
+            next_states = state.next_state(current)
+
+            for item in next_states:
+                if (
+                    current.parent is None
+                    or item.get_hash() != current.parent.get_hash()
+                ) and not item.game_over:
+                    item.parent = current
+                    my_stack.append((item, depth + 1))  # زيادة العمق
+
     return {
         "path": [],
-        "path_len": [],
-        "visited_len": [],
+        "path_len": 0,
+        "visited_len": len(visited_set),
     }
 
 
-def DFS_R(start_state, visited_array=None, my_lifo_queue=None):
-    if visited_array is None:
-        visited_array = np.array([])
-    if my_lifo_queue is None:
-        my_lifo_queue = queue.LifoQueue()
-        my_lifo_queue.put(start_state)
+# ,max_depth=22  if depth>max_depth:
+#         DFS_R(my_stack[-1], visited_set, my_stack)
+#       else:
 
-    if my_lifo_queue.empty() == False:
 
-        current = my_lifo_queue.get()
-        if current.is_finite() == True:
-            path = np.array([current])
-            while current.parent != None:
-                path = np.append(path, current.parent)
-                current = current.parent
-            path = np.flip(path)
+def DFS_R(start_state, visited_set=None, my_stack=None, max_depth=27):
+    if visited_set is None:
+        visited_set = set()
+    if my_stack is None:
+        my_stack = deque([(start_state, 0)])
 
-            return {
-                "path": path,
-                "path_len": len(path),
-                "visited_len": len(visited_array),
-            }
-
+    if my_stack:
+        print(len(visited_set))
+        current, depth = my_stack.pop()
+        if depth > max_depth:
+            return DFS_R(my_stack[-1], visited_set, my_stack)
         else:
-            visited = False
-            for item in visited_array:
-                if state.equals(item, current) == True:
-                    visited = True
-                    break
-                continue
-            if visited == False:
-                visited_array = np.append(visited_array, current)
+            if current.is_finite():
+                cost = current.edge
+                path = [current]
+                while current.parent:
+
+                    path.append(current.parent)
+                    current = current.parent
+                path.reverse()
+                return {
+                    "path": path,
+                    "path_len": len(path),
+                    "visited_len": len(visited_set),
+                    "cost": cost,
+                }
+
+            current_h = current.get_hash()
+            if current_h not in visited_set:
+                visited_set.add(current_h)
                 next_states = state.next_state(current)
-                for item1 in next_states:
-                    item1.parent = current
-                    my_lifo_queue.put(item1)
-            return DFS_R(my_lifo_queue.queue[-1], visited_array, my_lifo_queue)
+
+                for item in next_states:
+                    if (
+                        current.parent is None
+                        or item.get_hash() != current.parent.get_hash()
+                    ) and not item.game_over:
+                        item.parent = current
+                        my_stack.append((item, depth + 1))
+
+            return DFS_R(my_stack[-1], visited_set, my_stack)
+
     return {
         "path": [],
-        "path_len": [],
-        "visited_len": [],
+        "path_len": 0,
+        "visited_len": len(visited_set),
     }
 
 
 def UCS(start_state):
 
-    priority_queue = queue.PriorityQueue()
+    priority_queue = []
+    heappush(priority_queue, (start_state.edge, start_state))
 
-    priority_queue.put((start_state.edge, start_state))
-    visited_array = np.array([])
+    visited_set = set()
 
-    while not priority_queue.empty():
-
-        current_cost, current = priority_queue.get()
+    while priority_queue:
+        print(len(visited_set))
+        current_cost, current = heappop(priority_queue)
 
         if current.is_finite():
-            path = np.array([current])
-            while current.parent is not None:
-                path = np.append(path, current.parent)
+
+            path = [current]
+            cost = current_cost
+            while current.parent:
+                path.append(current.parent)
                 current = current.parent
-            path = np.flip(path)
+            path.reverse()
             return {
                 "path": path,
                 "path_len": len(path),
-                "visited_len": len(visited_array),
+                "visited_len": len(visited_set),
+                "cost": cost,
             }
 
-        visited = False
-        for item in visited_array:
-            if state.equals(item, current) and item.edge == current.edge:
-                visited = True
-                break
-
-        if not visited:
-
-            visited_array = np.append(visited_array, current)
-
-            next_states = state.next_state(current)
-            if current.parent == None:
-                for item in next_states:
-
-                    item.parent = current
-
-                    item.edge = current_cost + 1
-
-                    priority_queue.put((item.edge, item))
-            else:
-                for item in next_states:
-                    if state.equals(item, current.parent) == False:
-                        item.parent = current
-
-                        item.edge = current_cost + 1
-
-                        priority_queue.put((item.edge, item))
-
-    return {
-        "path": [],
-        "path_len": [],
-        "visited_len": [],
-    }
-
-
-def A_star(start_state):
-    priority_queue = queue.PriorityQueue()
-    start_cost = heuristic(start_state)
-    priority_queue.put((start_cost, 0, start_state))
-    visited_array = np.array([])
-
-    while not priority_queue.empty():
-        _, current_cost, current = priority_queue.get()
-
-        if current.is_finite():
-            path = np.array([current])
-            while current.parent is not None:
-                path = np.append(path, current.parent)
-                current = current.parent
-            path = np.flip(path)
-            return {
-                "path": path,
-                "path_len": len(path),
-                "visited_len": len(visited_array),
-            }
-
-        visited = False
-        for item in visited_array:
-            if state.equals(item, current):
-                visited = True
-                break
-
-        if not visited:
-            visited_array = np.append(visited_array, current)
+        current_h = current.get_hash()
+        if current_h not in visited_set:
+            visited_set.add(current_h)
 
             next_states = state.next_state(current)
             for item in next_states:
-                if current.parent is None or not state.equals(item, current.parent):
+                if (
+                    current.parent is None
+                    or item.get_hash() != current.parent.get_hash()
+                ) and not item.game_over:
                     item.parent = current
-                    g_cost = current_cost + 1
+
+                    heappush(priority_queue, (item.edge, item))
+
+    return {"path": [], "path_len": 0, "visited_len": len(visited_set), "cost": 0}
+
+
+def A_star(start_state):
+    priority_queue = []
+    start_cost = heuristic(start_state)
+    heappush(priority_queue, (start_cost, 0, start_state))
+    visited_set = set()
+
+    while priority_queue:
+        _, current_cost, current = heappop(priority_queue)
+        print(len(visited_set))
+
+        if current.is_finite():
+
+            path = [current]
+            cost = current_cost
+            while current.parent:
+                path.append(current.parent)
+                current = current.parent
+            path.reverse()
+            return {
+                "path": path,
+                "path_len": len(path),
+                "visited_len": len(visited_set),
+                "cost": cost,
+            }
+
+        current_h = current.get_hash()
+        if current_h not in visited_set:
+            visited_set.add(current_h)
+
+            next_states = state.next_state(current)
+            for item in next_states:
+                if (
+                    current.parent is None
+                    or item.get_hash() != current.parent.get_hash()
+                ):
+                    item.parent = current
+                    g_cost = item.edge
                     f_cost = g_cost + heuristic(item)
-                    priority_queue.put((f_cost, g_cost, item))
+                    heappush(priority_queue, (f_cost, g_cost, item))
 
     return {
         "path": [],
-        "path_len": [],
-        "visited_len": len(visited_array),
+        "path_len": 0,
+        "visited_len": len(visited_set),
+        "cost": 0,
+    }
+
+
+def A_star_advance(start_state):
+    priority_queue = []
+    start_cost = heuristic(start_state)
+    heappush(priority_queue, (start_cost, 0, start_state))
+    visited_set = set()
+
+    while priority_queue:
+        _, current_cost, current = heappop(priority_queue)
+        print(len(visited_set))
+
+        if current.is_finite():
+
+            path = [current]
+            cost = current_cost
+            while current.parent:
+                path.append(current.parent)
+                current = current.parent
+            path.reverse()
+            return {
+                "path": path,
+                "path_len": len(path),
+                "visited_len": len(visited_set),
+                "cost": cost,
+            }
+
+        current_h = current.get_hash()
+        if current_h not in visited_set:
+            visited_set.add(current_h)
+
+            next_states = state.next_state(current)
+            for item in next_states:
+                if (
+                    current.parent is None
+                    or item.get_hash() != current.parent.get_hash()
+                ) and not item.game_over:
+                    item.parent = current
+                    g_cost = item.edge
+                    f_cost = g_cost + heuristic(item)
+
+                    heappush(priority_queue, (f_cost, g_cost, item))
+
+    return {
+        "path": [],
+        "path_len": 0,
+        "visited_len": len(visited_set),
+        "cost": 0,
     }
 
 
 def simple_hill_climbing(start_state):
     current = start_state
-    visited_array = np.array([])
+    visited_set = set()
 
     while not current.is_finite():
-        visited_array = np.append(visited_array, current)
+
+        visited_set.add(current)
         next_states = state.next_state(current)
 
         if len(next_states) == 0:
@@ -272,30 +345,30 @@ def simple_hill_climbing(start_state):
         current = best_state
 
     if current.is_finite():
-        path = np.array([current])
-        while current.parent is not None:
-            path = np.append(path, current.parent)
+        path = []
+        while current is not None:
+            path.append(current)
             current = current.parent
-        path = np.flip(path)
+        path.reverse()
         return {
             "path": path,
             "path_len": len(path),
-            "visited_len": len(visited_array),
+            "visited_len": len(visited_set),
         }
 
     return {
         "path": [],
         "path_len": 0,
-        "visited_len": visited_array,
+        "visited_len": len(visited_set),
     }
 
 
 def steepest_hill_climbing(start_state):
     current = start_state
-    visited_array = np.array([])
+    visited_set = set()
 
     while not current.is_finite():
-        visited_array = np.append(visited_array, current)
+        visited_set.add(current)
         next_states = state.next_state(current)
 
         if len(next_states) == 0:
@@ -310,19 +383,19 @@ def steepest_hill_climbing(start_state):
         current = best_next_state
 
     if current.is_finite():
-        path = np.array([current])
-        while current.parent is not None:
-            path = np.append(path, current.parent)
+        path = []
+        while current is not None:
+            path.append(current)
             current = current.parent
-        path = np.flip(path)
+        path.reverse()
         return {
             "path": path,
             "path_len": len(path),
-            "visited_len": len(visited_array),
+            "visited_len": len(visited_set),
         }
 
     return {
         "path": [],
         "path_len": 0,
-        "visited_len": visited_array,
+        "visited_len": len(visited_set),
     }
